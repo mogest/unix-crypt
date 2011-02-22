@@ -95,7 +95,7 @@ module UnixCrypt
       dp = digest.digest(password * password.length)
       p = dp * (password.length/length) + dp[0...password.length % length]
 
-      ds = digest.digest(salt * (16 + a.bytes.to_a[0]))
+      ds = digest.digest(salt * (16 + a.bytes.first))
       s = ds * (salt.length/length) + ds[0...salt.length % length]
 
       rounds.times do |index|
