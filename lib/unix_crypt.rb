@@ -12,7 +12,7 @@ module UnixCrypt
 
   class Base
     def self.build(password, salt, rounds = nil)
-      "$#{identifier}$#{salt}$#{hash(password, salt)}"
+      "$#{identifier}$#{salt}$#{hash(password, salt, rounds)}"
     end
 
     protected
