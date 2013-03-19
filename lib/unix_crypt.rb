@@ -1,4 +1,5 @@
 require 'digest'
+require 'securerandom'
 
 module UnixCrypt
   def self.valid?(password, string)
@@ -11,8 +12,11 @@ module UnixCrypt
   end
 
   class Base
-    def self.build(password, salt, rounds = nil)
-      "$#{identifier}$#{salt}$#{hash(password, salt, rounds)}"
+    def self.build(password, salt = nil, rounds = nil)
+      @salt = salt
+      hashed = hash(password, salt, rounds)
+  
+      return "$#{identifier}$#{@salt}$#{hashed}"
     end
 
     protected
@@ -46,11 +50,12 @@ module UnixCrypt
       [[0, 6, 12], [1, 7, 13], [2, 8, 14], [3, 9, 15], [4, 10, 5], [nil, nil, 11]]
     end
 
-    def self.hash(password, salt, ignored = nil)
-      salt = salt[0..7]
+    def self.hash(password, salt = nil, ignored = nil)
+      salt = SecureRandom.hex(4) if salt.nil?
+      @salt = salt[0..7]
 
-      b = digest.digest("#{password}#{salt}#{password}")
-      a_string = "#{password}$1$#{salt}#{b * (password.length/length)}#{b[0...password.length % length]}"
+      b = digest.digest("#{password}#{@salt}#{password}")
+      a_string = "#{password}$1$#{@salt}#{b * (password.length/length)}#{b[0...password.length % length]}"
 
       password_length = password.length
       while password_length > 0
@@ -62,7 +67,7 @@ module UnixCrypt
 
       1000.times do |index|
         c_string = ((index & 1 != 0) ? password : input)
-        c_string += salt unless index % 3 == 0
+        c_string += @salt unless index % 3 == 0
         c_string += password unless index % 7 == 0
         c_string += ((index & 1 != 0) ? input : password)
         input = digest.digest(c_string)
@@ -73,16 +78,17 @@ module UnixCrypt
   end
 
   class SHABase < Base
-    def self.hash(password, salt, rounds = nil)
+    def self.hash(password, salt = nil, rounds = nil)
       rounds ||= 5000
       rounds = 1000        if rounds < 1000
       rounds = 999_999_999 if rounds > 999_999_999
 
-      salt = salt[0..15]
+      salt = SecureRandom.hex(8) if salt.nil?
+      @salt = salt[0..15]
 
-      b = digest.digest("#{password}#{salt}#{password}")
+      b = digest.digest("#{password}#{@salt}#{password}")
 
-      a_string = password + salt + b * (password.length/length) + b[0...password.length % length]
+      a_string = password + @salt + b * (password.length/length) + b[0...password.length % length]
 
       password_length = password.length
       while password_length > 0
@@ -95,8 +101,8 @@ module UnixCrypt
       dp = digest.digest(password * password.length)
       p = dp * (password.length/length) + dp[0...password.length % length]
 
-      ds = digest.digest(salt * (16 + a.bytes.first))
-      s = ds * (salt.length/length) + ds[0...salt.length % length]
+      ds = digest.digest(@salt * (16 + a.bytes.first))
+      s = ds * (@salt.length/length) + ds[0...@salt.length % length]
 
       rounds.times do |index|
         c_string = ((index & 1 != 0) ? p : input)
