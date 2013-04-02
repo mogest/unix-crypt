@@ -14,14 +14,19 @@ module UnixCrypt
 
   class Base
     def self.build(password, salt = nil, rounds = nil)
-      @salt = salt
-      hashed = hash(password, salt, rounds)
+      salt ||= generate_salt
 
-      return "$#{identifier}$#{@salt}$#{hashed}"
+      "$#{identifier}$#{salt}$#{hash(password, salt, rounds)}"
+    end
+
+    def self.generate_salt
+      # Generates a random salt using the same character set as the base64 encoding
+      # used by the hash encoder.
+      SecureRandom.base64(default_salt_length).gsub("=", "").tr("+", ".")
     end
 
     protected
-    def self.base64encode(input)
+    def self.bit_specified_base64encode(input)
       b64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
       input = input.bytes.to_a
       output = ""
@@ -42,10 +47,13 @@ module UnixCrypt
     end
 
     def self.prepare_password(password)
+      # For Ruby 1.9+, convert the password to UTF-8, then treat that new string
+      # as binary for the digest methods.
       if password.respond_to?(:encode)
         password = password.encode("UTF-8")
         password.force_encoding("ASCII-8BIT")
       end
+
       password
     end
   end
@@ -53,20 +61,20 @@ module UnixCrypt
   class MD5 < Base
     def self.digest; Digest::MD5; end
     def self.length; 16; end
+    def self.default_salt_length; 6; end
     def self.identifier; 1; end
 
     def self.byte_indexes
       [[0, 6, 12], [1, 7, 13], [2, 8, 14], [3, 9, 15], [4, 10, 5], [nil, nil, 11]]
     end
 
-    def self.hash(password, salt = nil, ignored = nil)
-      salt = SecureRandom.hex(4) if salt.nil?
-      @salt = salt[0..7]
+    def self.hash(password, salt, ignored = nil)
+      salt = salt[0..7]
 
       password = prepare_password(password)
 
-      b = digest.digest("#{password}#{@salt}#{password}")
-      a_string = "#{password}$1$#{@salt}#{b * (password.length/length)}#{b[0...password.length % length]}"
+      b = digest.digest("#{password}#{salt}#{password}")
+      a_string = "#{password}$1$#{salt}#{b * (password.length/length)}#{b[0...password.length % length]}"
 
       password_length = password.length
       while password_length > 0
@@ -78,30 +86,31 @@ module UnixCrypt
 
       1000.times do |index|
         c_string = ((index & 1 != 0) ? password : input)
-        c_string += @salt unless index % 3 == 0
+        c_string += salt unless index % 3 == 0
         c_string += password unless index % 7 == 0
         c_string += ((index & 1 != 0) ? input : password)
         input = digest.digest(c_string)
       end
 
-      base64encode(input)
+      bit_specified_base64encode(input)
     end
   end
 
   class SHABase < Base
-    def self.hash(password, salt = nil, rounds = nil)
+    def self.default_salt_length; 12; end
+
+    def self.hash(password, salt, rounds = nil)
       rounds ||= 5000
       rounds = 1000        if rounds < 1000
       rounds = 999_999_999 if rounds > 999_999_999
 
-      salt = SecureRandom.hex(8) if salt.nil?
-      @salt = salt[0..15]
+      salt = salt[0..15]
 
       password = prepare_password(password)
 
-      b = digest.digest("#{password}#{@salt}#{password}")
+      b = digest.digest("#{password}#{salt}#{password}")
 
-      a_string = password + @salt + b * (password.length/length) + b[0...password.length % length]
+      a_string = password + salt + b * (password.length/length) + b[0...password.length % length]
 
       password_length = password.length
       while password_length > 0
@@ -114,8 +123,8 @@ module UnixCrypt
       dp = digest.digest(password * password.length)
       p = dp * (password.length/length) + dp[0...password.length % length]
 
-      ds = digest.digest(@salt * (16 + a.bytes.first))
-      s = ds * (@salt.length/length) + ds[0...@salt.length % length]
+      ds = digest.digest(salt * (16 + a.bytes.first))
+      s = ds * (salt.length/length) + ds[0...salt.length % length]
 
       rounds.times do |index|
         c_string = ((index & 1 != 0) ? p : input)
@@ -125,7 +134,7 @@ module UnixCrypt
         input = digest.digest(c_string)
       end
 
-      base64encode(input)
+      bit_specified_base64encode(input)
     end
   end
 

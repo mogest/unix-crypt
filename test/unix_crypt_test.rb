@@ -49,4 +49,10 @@ class UnixCryptTest < Test::Unit::TestCase
       assert UnixCrypt.valid?(password, expected), "Password '#{password}' (index #{index}) failed"
     end
   end
+
+  def test_salt_generation
+    assert_match %r{\A\$1\$[a-zA-Z0-9./]{8}\$[a-zA-Z0-9./]{22}\z}, UnixCrypt::MD5.build("test password")
+    assert_match %r{\A\$5\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{43}\z}, UnixCrypt::SHA256.build("test password")
+    assert_match %r{\A\$6\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}\z}, UnixCrypt::SHA512.build("test password")
+  end
 end
