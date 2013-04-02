@@ -7,6 +7,8 @@ module UnixCrypt
     return password.crypt(string) == string if string.length == 13
 
     return false unless m = string.match(/\A\$([156])\$(?:rounds=(\d+)\$)?(.+)\$(.+)/)
+
+    password = password.force_encoding('ASCII-8BIT') if password.respond_to?(:force_encoding)
     hash = IDENTIFIER_MAPPINGS[m[1]].hash(password, m[3], m[2] && m[2].to_i)
     hash == m[4]
   end
@@ -15,7 +17,7 @@ module UnixCrypt
     def self.build(password, salt = nil, rounds = nil)
       @salt = salt
       hashed = hash(password, salt, rounds)
-  
+
       return "$#{identifier}$#{@salt}$#{hashed}"
     end
 
