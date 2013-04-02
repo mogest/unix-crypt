@@ -8,7 +8,6 @@ module UnixCrypt
 
     return false unless m = string.match(/\A\$([156])\$(?:rounds=(\d+)\$)?(.+)\$(.+)/)
 
-    password = password.force_encoding('ASCII-8BIT') if password.respond_to?(:force_encoding)
     hash = IDENTIFIER_MAPPINGS[m[1]].hash(password, m[3], m[2] && m[2].to_i)
     hash == m[4]
   end
@@ -41,6 +40,14 @@ module UnixCrypt
       remainder = 0 if remainder == 3
       output[0..-1-remainder]
     end
+
+    def self.prepare_password(password)
+      if password.respond_to?(:encode)
+        password = password.encode("UTF-8")
+        password.force_encoding("ASCII-8BIT")
+      end
+      password
+    end
   end
 
   class MD5 < Base
@@ -55,6 +62,8 @@ module UnixCrypt
     def self.hash(password, salt = nil, ignored = nil)
       salt = SecureRandom.hex(4) if salt.nil?
       @salt = salt[0..7]
+
+      password = prepare_password(password)
 
       b = digest.digest("#{password}#{@salt}#{password}")
       a_string = "#{password}$1$#{@salt}#{b * (password.length/length)}#{b[0...password.length % length]}"
@@ -87,6 +96,8 @@ module UnixCrypt
 
       salt = SecureRandom.hex(8) if salt.nil?
       @salt = salt[0..15]
+
+      password = prepare_password(password)
 
       b = digest.digest("#{password}#{@salt}#{password}")
 
