@@ -15,7 +15,7 @@ module UnixCrypt
     def self.build(password, salt = nil, rounds = nil)
       @salt = salt
       hashed = hash(password, salt, rounds)
-  
+
       return "$#{identifier}$#{@salt}$#{hashed}"
     end
 
@@ -51,6 +51,7 @@ module UnixCrypt
     end
 
     def self.hash(password, salt = nil, ignored = nil)
+      password = password.force_encoding('ASCII-8BIT')
       salt = SecureRandom.hex(4) if salt.nil?
       @salt = salt[0..7]
 

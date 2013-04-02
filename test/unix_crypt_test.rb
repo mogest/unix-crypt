@@ -1,3 +1,4 @@
+# encoding: utf-8
 #
 # MD5 test cases constructed by Mark Johnston, taken from
 # http://code.activestate.com/recipes/325204-passwd-file-compatible-1-md5-crypt/
@@ -23,6 +24,7 @@ class UnixCryptTest < Test::Unit::TestCase
       [nil, '____sixteen_____', '$1$dL3xbVZI$kkgqhCanLdxODGq14g/tW1'],
       [nil, '____seventeen____', '$1$NaH5na7J$j7y8Iss0hcRbu3kzoJs5V.'],
       [nil, '__________thirty-three___________', '$1$HO7Q6vzJ$yGwp2wbL5D7eOVzOmxpsy.'],
+      [nil, 'Pässword', '$1$NaH5na7J$MvnEHcxaKZzgBk8QdjdAQ0'],
 
       # SHA256
       ["$5$saltstring", "Hello world!", "$5$saltstring$5B8vYYiY.CVt1RlTTf8KbXBH3hsxY/GNooZaBBGWEc5"],
