@@ -4,13 +4,15 @@
 
 unix-crypt creates and checks passwords that you'd normally find in an /etc/shadow file on your UNIX box.
 
-It's written entirely in Ruby and only requires the 'digest' and 'securerandom' libraries that come with Ruby.
+It's written entirely in Ruby and has no external dependencies.
 
 It handles:
 * DES passwords (the standard 13 character password with a 2 character salt)
 * MD5 passwords (starting with $1$)
 * SHA256 passwords (starting with $5$)
 * SHA512 passwords (starting with $6$)
+
+This library is compatible with Ruby 1.8.7 and above.  Tested on Ruby 2.0.0p0.
 
 == HOW TO USE
 
