@@ -7,17 +7,45 @@ require 'rubygems'
 require File.expand_path('../../lib/unix_crypt', __FILE__)
 
 class Opts
+
+  HASHERS = {
+    :SHA512 => Proc.new {|*args| UnixCrypt::SHA512.build(*args) },
+    :SHA256 => Proc.new {|*args| UnixCrypt::SHA256.build(*args) },
+    :MD5    => Proc.new {|*args| UnixCrypt::MD5.build(*args)    },
+  }
+
   def self.parse(args)
-    options           = OpenStruct.new
-    options.password  = nil
-    options.leftovers = OptionParser.new do |opts|
+    options            = OpenStruct.new
+    options.hashmethod = :SHA512
+    options.hasher     = HASHERS[options.hashmethod]
+    options.password   = nil
+    options.salt       = nil
+    options.rounds     = nil
+    options.leftovers  = OptionParser.new do |opts|
       opts.banner = "Usage: #{File.basename __FILE__} [options]"
       opts.separator "Encrypts password using crypt-SHA512 for unix password file"
       opts.separator ""
       opts.separator "Options:"
 
-      opts.on("-p", "--password [PASSWORD]", String, "Set password on command line (insecure!)") do |password|
+      opts.on("-h", "--hash [HASH]", String, "Set hash algorithm [default: SHA512; SHA256, MD5]") do |hasher|
+        options.hashmethod = hasher.to_s.upcase.to_sym
+        options.hasher     = HASHERS[options.hashmethod]
+        abort "Invalid hash algorithm for -h/--hash" if options.hasher.nil?
+      end
+
+      opts.on("-p", "--password [PASSWORD]", String, "Provide password on command line (insecure!)") do |password|
+        abort "Invalid password for -p/--password" if password.nil?
         options.password = password
+      end
+
+      opts.on("-s", "--salt [SALT]", String, "Provide hash salt") do |salt|
+        abort "Invalid salt for -s/--salt" if salt.nil?
+        options.salt = salt
+      end
+
+      opts.on("-r", "--rounds [ROUNDS]", Integer, "Set number of hashing rounds") do |rounds|
+        abort "Invalid hashing rounds for -r/--rounds" if rounds.nil?
+        options.rounds = rounds
       end
 
       opts.on_tail("-h", "--help", "Show this message") do
@@ -43,6 +71,16 @@ def ask_noecho(message)
   result
 end
 
+def password_warning
+  $stderr.puts <<-EOS
+
+--> SECURITY WARNING <--
+  Please emember to clear your shell history so that the
+  password specified on the command-line is not retained!
+
+EOS
+end
+
 def ask_password
   password = ask_noecho("Enter password: ")
   twice    = ask_noecho("Verify password: ")
@@ -50,15 +88,18 @@ def ask_password
   password.chomp # remove CR/LF
 end
 
-def generate_password(password)
-  # Automatically generates salt using SecureRandom
-  # Use 50K rounds instead of default 5K rounds
-  UnixCrypt::SHA512.build(password, nil, 50_000)
+def encrypt_password(argv)
+  options  = Opts.parse(argv)
+  if options.password.nil?
+    options.password = ask_password
+  else
+    password_warning
+  end
+
+  #$stderr.puts "#{options.hashmethod}('#{options.password}', '#{options.salt}', #{options.rounds})"
+  puts options.hasher.call(options.password, options.salt, options.rounds)
 end
 
 if __FILE__ == $0
-  options  = Opts.parse(ARGV)
-  password = options.password
-  password = ask_password if password.to_s.empty?
-  puts generate_password(password)
+  encrypt_password(ARGV)
 end
