@@ -8,7 +8,7 @@
 #
 
 require 'test/unit'
-require '../lib/unix_crypt'
+require File.expand_path('../../lib/unix_crypt', __FILE__)
 
 class UnixCryptTest < Test::Unit::TestCase
   def test_password_validity
