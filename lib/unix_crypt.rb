@@ -2,6 +2,8 @@ require 'digest'
 require 'securerandom'
 
 module UnixCrypt
+  VERSION = "1.1.1"
+
   def self.valid?(password, string)
     # Handle the original DES-based crypt(3)
     return password.crypt(string) == string if string.length == 13
