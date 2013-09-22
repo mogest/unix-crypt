@@ -34,3 +34,11 @@ If a salt is not specified, one will be generated using random data:
 == LICENSE
 
 Licensed under the BSD license.  See LICENSE file for details.
+
+== Author
+
+* Roger Nesbitt (roger@seriousorange.com)
+
+== Contributors
+
+* Patrick Wyatt (pat@codeofhonor.com)
