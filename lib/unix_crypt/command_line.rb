@@ -7,6 +7,8 @@ rescue LoadError
 end
 
 class UnixCrypt::CommandLine
+  Abort = Class.new(StandardError)
+
   attr_reader :options
 
   def initialize(argv)
@@ -48,22 +50,22 @@ class UnixCrypt::CommandLine
         opts.on("-h", "--hash [HASH]", String, "Set hash algorithm [SHA512 (default), SHA256, MD5]") do |hasher|
           options.hashmethod = hasher.to_s.upcase.to_sym
           options.hasher     = HASHERS[options.hashmethod]
-          abort "Invalid hash algorithm for -h/--hash" if options.hasher.nil?
+          raise Abort, "Invalid hash algorithm for -h/--hash" if options.hasher.nil?
         end
 
         opts.on("-p", "--password [PASSWORD]", String, "Provide password on command line (insecure!)") do |password|
-          abort "Invalid password for -p/--password" if password.nil?
+          raise Abort, "Invalid password for -p/--password" if password.nil?
           options.password = password
           $0 = $0 # this invocation will get rid of the command line arguments from the process list
         end
 
         opts.on("-s", "--salt [SALT]", String, "Provide hash salt") do |salt|
-          abort "Invalid salt for -s/--salt" if salt.nil?
+          raise Abort, "Invalid salt for -s/--salt" if salt.nil?
           options.salt = salt
         end
 
         opts.on("-r", "--rounds [ROUNDS]", Integer, "Set number of hashing rounds (SHA256/SHA512 only)") do |rounds|
-          abort "Invalid hashing rounds for -r/--rounds" if rounds.nil? || rounds.to_i <= 0
+          raise Abort, "Invalid hashing rounds for -r/--rounds" if rounds.nil? || rounds.to_i <= 0
           options.rounds = rounds
         end
 
@@ -112,7 +114,7 @@ class UnixCrypt::CommandLine
     if password != twice
       clear_string(password)
       clear_string(twice)
-      abort "Passwords don't match"
+      raise Abort, "Passwords don't match"
     end
 
     clear_string(twice)

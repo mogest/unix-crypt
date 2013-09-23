@@ -9,4 +9,8 @@ end
 
 require 'unix_crypt/command_line'
 
-UnixCrypt::CommandLine.new(ARGV).encrypt
+begin
+  UnixCrypt::CommandLine.new(ARGV).encrypt
+rescue UnixCrypt::CommandLine::Abort => e
+  abort e.message
+end
