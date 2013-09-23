@@ -1,6 +1,10 @@
 require 'optparse'
 require 'ostruct'
-require 'io/console'
+begin
+  require 'io/console'
+rescue LoadError
+  $no_io_console = true
+end
 
 class UnixCrypt::CommandLine
   attr_reader :options
@@ -79,7 +83,16 @@ class UnixCrypt::CommandLine
 
   def ask_noecho(message)
     $stderr.print message
-    result = $stdin.noecho(&:gets)
+    if $no_io_console
+      begin
+        `stty -echo`
+        result = gets
+      ensure
+        `stty echo`
+      end
+    else
+      result = $stdin.noecho(&:gets)
+    end
     $stderr.puts
     result
   end
