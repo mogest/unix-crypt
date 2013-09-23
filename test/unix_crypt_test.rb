@@ -50,9 +50,42 @@ class UnixCryptTest < Test::Unit::TestCase
     end
   end
 
+  def test_md5_password_generation
+    hash = UnixCrypt::MD5.build("test")
+    assert UnixCrypt.valid?("test", hash)
+  end
+
+  def test_sha256_password_generation
+    hash = UnixCrypt::SHA256.build("test")
+    assert UnixCrypt.valid?("test", hash)
+  end
+
+  def test_sha512_password_generation
+    hash = UnixCrypt::SHA512.build("test")
+    assert UnixCrypt.valid?("test", hash)
+  end
+
   def test_salt_generation
     assert_match %r{\A\$1\$[a-zA-Z0-9./]{8}\$[a-zA-Z0-9./]{22}\z}, UnixCrypt::MD5.build("test password")
     assert_match %r{\A\$5\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{43}\z}, UnixCrypt::SHA256.build("test password")
     assert_match %r{\A\$6\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}\z}, UnixCrypt::SHA512.build("test password")
+  end
+
+  def test_password_generation_with_rounds
+    hash = UnixCrypt::SHA512.build("test password", nil, 5678)
+    assert_match %r{\A\$6\$rounds=5678\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}\z}, hash
+    assert UnixCrypt.valid?("test password", hash)
+
+    assert_match %r{\A\$6\$rounds=5678\$salted\$[a-zA-Z0-9./]{86}\z}, UnixCrypt::SHA512.build("test password", "salted", 5678)
+  end
+
+  def test_default_rounds_does_not_add_rounds_marker
+    assert_match %r{\A\$6\$salted\$[a-zA-Z0-9./]{86}\z}, UnixCrypt::SHA512.build("test password", "salted", 5000) # the default number of rounds
+  end
+
+  def test_rounds_bounds
+    hash = UnixCrypt::SHA512.build("test password", nil, 567)
+    assert_match %r{\A\$6\$rounds=1000\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}\z}, hash
+    assert UnixCrypt.valid?("test password", hash)
   end
 end

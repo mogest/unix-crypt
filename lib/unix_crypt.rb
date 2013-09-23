@@ -18,7 +18,7 @@ module UnixCrypt
     def self.build(password, salt = nil, rounds = nil)
       salt ||= generate_salt
 
-      "$#{identifier}$#{salt}$#{hash(password, salt, rounds)}"
+      "$#{identifier}$#{rounds_marker rounds}#{salt}$#{hash(password, salt, rounds)}"
     end
 
     def self.hash(password, salt, rounds = nil)
@@ -62,6 +62,10 @@ module UnixCrypt
 
       password
     end
+
+    def self.rounds_marker(rounds)
+      nil
+    end
   end
 
   class MD5 < Base
@@ -101,13 +105,12 @@ module UnixCrypt
   end
 
   class SHABase < Base
+  protected
     def self.default_salt_length; 12; end
+    def self.default_rounds; 5000; end
 
     def self.internal_hash(password, salt, rounds = nil)
-      rounds ||= 5000
-      rounds = 1000        if rounds < 1000
-      rounds = 999_999_999 if rounds > 999_999_999
-
+      rounds = apply_rounds_bounds(rounds || default_rounds)
       salt = salt[0..15]
 
       b = digest.digest("#{password}#{salt}#{password}")
@@ -137,6 +140,18 @@ module UnixCrypt
       end
 
       input
+    end
+
+    def self.apply_rounds_bounds(rounds)
+      rounds = 1000        if rounds < 1000
+      rounds = 999_999_999 if rounds > 999_999_999
+      rounds
+    end
+
+    def self.rounds_marker(rounds)
+      if rounds && rounds != default_rounds
+        "rounds=#{apply_rounds_bounds(rounds)}$"
+      end
     end
   end
 
