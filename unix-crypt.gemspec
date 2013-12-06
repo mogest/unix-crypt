@@ -1,4 +1,7 @@
-require './lib/unix_crypt'
+lib = File.expand_path('../lib/', __FILE__)
+$:.unshift lib unless $:.include?(lib)
+
+require 'unix_crypt'
 
 spec = Gem::Specification.new do |s|
   s.name         = 'unix-crypt'

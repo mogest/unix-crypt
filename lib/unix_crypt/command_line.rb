@@ -22,7 +22,12 @@ class UnixCrypt::CommandLine
       password_warning
     end
 
-    puts @options.hasher.build(@options.password, @options.salt, @options.rounds)
+    begin
+      puts @options.hasher.build(@options.password, @options.salt, @options.rounds)
+    rescue UnixCrypt::Error => e
+      $stderr.puts "password generation failed: #{e.message}"
+    end
+
     clear_string(@options.password)
   end
 
@@ -31,7 +36,8 @@ class UnixCrypt::CommandLine
     HASHERS = {
       :SHA512 => UnixCrypt::SHA512,
       :SHA256 => UnixCrypt::SHA256,
-      :MD5    => UnixCrypt::MD5
+      :MD5    => UnixCrypt::MD5,
+      :DES    => UnixCrypt::DES
     }
 
     def self.parse(args)
@@ -47,7 +53,7 @@ class UnixCrypt::CommandLine
         opts.separator ""
         opts.separator "Options:"
 
-        opts.on("-h", "--hash [HASH]", String, "Set hash algorithm [SHA512 (default), SHA256, MD5]") do |hasher|
+        opts.on("-h", "--hash [HASH]", String, "Set hash algorithm [SHA512 (default), SHA256, MD5, DES]") do |hasher|
           options.hashmethod = hasher.to_s.upcase.to_sym
           options.hasher     = HASHERS[options.hashmethod]
           raise Abort, "Invalid hash algorithm for -h/--hash" if options.hasher.nil?

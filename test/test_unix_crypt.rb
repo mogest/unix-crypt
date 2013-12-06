@@ -50,25 +50,50 @@ class UnixCryptTest < Test::Unit::TestCase
     end
   end
 
-  def test_md5_password_generation
+  def test_validity_of_des_password_generation
+    hash = UnixCrypt::DES.build("test")
+    assert UnixCrypt.valid?("test", hash)
+
+    hash = UnixCrypt::DES.build("test", 'xx')
+    assert UnixCrypt.valid?("test", hash)
+  end
+
+  def test_validity_of_md5_password_generation
     hash = UnixCrypt::MD5.build("test")
     assert UnixCrypt.valid?("test", hash)
+
+    hash = UnixCrypt::MD5.build("test", "abcdefgh")
+    assert UnixCrypt.valid?("test", hash)
   end
 
-  def test_sha256_password_generation
+  def test_validity_of_sha256_password_generation
     hash = UnixCrypt::SHA256.build("test")
     assert UnixCrypt.valid?("test", hash)
-  end
 
-  def test_sha512_password_generation
-    hash = UnixCrypt::SHA512.build("test")
+    hash = UnixCrypt::SHA256.build("test", "1234567890123456")
     assert UnixCrypt.valid?("test", hash)
   end
 
-  def test_salt_generation
+  def test_validity_of_sha512_password_generation
+    hash = UnixCrypt::SHA512.build("test")
+    assert UnixCrypt.valid?("test", hash)
+
+    hash = UnixCrypt::SHA512.build("test", "1234567890123456")
+    assert UnixCrypt.valid?("test", hash)
+  end
+
+  def test_structure_of_generated_passwords_and_salts
+    assert_match %r{\A[a-zA-Z0-9./]{13}\z}, UnixCrypt::DES.build("test password")
+    assert_match %r{\Azz[a-zA-Z0-9./]{11}\z}, UnixCrypt::DES.build("test password", 'zz')
+
     assert_match %r{\A\$1\$[a-zA-Z0-9./]{8}\$[a-zA-Z0-9./]{22}\z}, UnixCrypt::MD5.build("test password")
+    assert_match %r{\A\$1\$abcdefgh\$[a-zA-Z0-9./]{22}\z}, UnixCrypt::MD5.build("test password", "abcdefgh")
+
     assert_match %r{\A\$5\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{43}\z}, UnixCrypt::SHA256.build("test password")
+    assert_match %r{\A\$5\$0123456789abcdef\$[a-zA-Z0-9./]{43}\z}, UnixCrypt::SHA256.build("test password", "0123456789abcdef")
+
     assert_match %r{\A\$6\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}\z}, UnixCrypt::SHA512.build("test password")
+    assert_match %r{\A\$6\$0123456789abcdef\$[a-zA-Z0-9./]{86}\z}, UnixCrypt::SHA512.build("test password", "0123456789abcdef")
   end
 
   def test_password_generation_with_rounds
@@ -87,5 +112,11 @@ class UnixCryptTest < Test::Unit::TestCase
     hash = UnixCrypt::SHA512.build("test password", nil, 567)
     assert_match %r{\A\$6\$rounds=1000\$[a-zA-Z0-9./]{16}\$[a-zA-Z0-9./]{86}\z}, hash
     assert UnixCrypt.valid?("test password", hash)
+  end
+
+  def test_salt_is_not_longer_than_max_length
+    assert_raise(UnixCrypt::SaltTooLongError) { UnixCrypt::DES.build("test", "123") }
+    assert_raise(UnixCrypt::SaltTooLongError) { UnixCrypt::MD5.build("test", "123456789") }
+    assert_raise(UnixCrypt::SaltTooLongError) { UnixCrypt::SHA256.build("test", "12345678901234567") }
   end
 end
