@@ -1,5 +1,6 @@
 require 'optparse'
 require 'ostruct'
+$no_io_console = false
 begin
   require 'io/console'
 rescue LoadError
