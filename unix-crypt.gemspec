@@ -12,9 +12,8 @@ spec = Gem::Specification.new do |s|
   s.test_files   = s.files.grep(%r{^(test|spec|features)/})
   s.executables  = ["mkunixcrypt"]
   s.require_path = 'lib'
-  s.has_rdoc     = false
   s.author       = "Roger Nesbitt"
   s.email        = "roger@seriousorange.com"
   s.homepage     = "https://github.com/mogest/unix-crypt"
-  s.license      = "BSD"
+  s.license      = "0BSD"
 end
