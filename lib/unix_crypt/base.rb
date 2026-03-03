@@ -26,7 +26,7 @@ class UnixCrypt::Base
   def self.bit_specified_base64encode(input)
     b64 = "./0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
     input = input.bytes.to_a
-    output = ""
+    output = +""
     byte_indexes.each do |i3, i2, i1|
       b1, b2, b3 = i1 && input[i1] || 0, i2 && input[i2] || 0, i3 && input[i3] || 0
       output <<

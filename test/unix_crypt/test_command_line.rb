@@ -16,7 +16,7 @@ class CommandLineTest < Test::Unit::TestCase
 
     def gets
       @buffer << [@name, @input.first.dup]
-      @input.shift
+      @input.shift.dup
     end
 
     def write(data)
